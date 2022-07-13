@@ -1,0 +1,77 @@
+commit ab4e5c698da3909ad781593cc8b478d7aada4b7f
+Author: Orr Kapel <orrk@hailo.ai>
+Date:   Sun Apr 17 11:30:44 2022 +0000
+
+    Merged in HRT-6618-support-offline-hailort-compilation (pull request #6810)
+    
+    HRT-6618 support offline hailort compilation
+    
+    * Support offline compilation
+    
+    * Added message on offline compilation'
+    
+    * Merged develop into HRT-6618-support-offline-hailort-compilation
+    * [PR] fixed note
+    
+    * Merge branch 'HRT-6618-support-offline-hailort-compilation' of bitbucket.org:hailotech/platform-sw into HRT-6618-support-offline-hailort-compilation
+    
+    
+    Approved-by: Or Ozeri
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 68b135bc3..8b433b3b5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -6,6 +6,7 @@ option(HAILO_BUILD_EMULATOR "Build hailort for emulator" OFF)
+ option(HAILO_BUILD_UT "Build Unit Tests" OFF)
+ option(HAILO_BUILD_GSTREAMER "Compile gstreamer plugins" OFF)
+ option(HAILO_BUILD_EXAMPLES "Build examples" OFF)
++option(HAILO_OFFLINE_COMPILATION "Don't download external dependencies" OFF)
+ 
+ find_program(CCACHE_PROGRAM ccache)
+ if(CCACHE_PROGRAM)
+diff --git a/hailort/CMakeLists.txt b/hailort/CMakeLists.txt
+index c189d11a5..4891a3a42 100644
+--- a/hailort/CMakeLists.txt
++++ b/hailort/CMakeLists.txt
+@@ -15,6 +15,7 @@ execute_cmake(
+         -DCMAKE_BUILD_TYPE=Release
+         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_LIST_DIR}/pre_build/install
+         -DHAILO_EXTERNAL_DIR=${HAILO_EXTERNAL_DIR}
++        -DHAILO_OFFLINE_COMPILATION=${HAILO_OFFLINE_COMPILATION}
+     BUILD_ARGS
+         --config ${CMAKE_BUILD_TYPE} --target install ${CMAKE_EXTRA_BUILD_ARGS}
+     PARALLEL_BUILD
+diff --git a/hailort/pre_build/CMakeLists.txt b/hailort/pre_build/CMakeLists.txt
+index 6eb22763c..47a43c53d 100644
+--- a/hailort/pre_build/CMakeLists.txt
++++ b/hailort/pre_build/CMakeLists.txt
+@@ -1,14 +1,18 @@
+ cmake_minimum_required(VERSION 3.0.0)
+ project(hailort_prebuild)
+ 
+-set(HAILO_PRE_BUILD_EXTERNAL_DIR ${CMAKE_CURRENT_LIST_DIR}/external)
+-include(../libhailort/cmake/execute_cmake.cmake)
+-message("Downloading dependencies to ${HAILO_EXTERNAL_DIR} ...")
+-execute_cmake(
+-    SOURCE_DIR "${HAILO_PRE_BUILD_EXTERNAL_DIR}"
+-    BUILD_DIR "${HAILO_PRE_BUILD_EXTERNAL_DIR}/build"
+-    CONFIGURE_ARGS "-DHAILO_EXTERNAL_DIR=${HAILO_EXTERNAL_DIR}"
+-)
+-message("Finished downloading dependencies")
++if(NOT HAILO_OFFLINE_COMPILATION)
++    set(HAILO_PRE_BUILD_EXTERNAL_DIR ${CMAKE_CURRENT_LIST_DIR}/external)
++    include(../libhailort/cmake/execute_cmake.cmake)
++    message("Downloading dependencies to ${HAILO_EXTERNAL_DIR} ...")
++    execute_cmake(
++        SOURCE_DIR "${HAILO_PRE_BUILD_EXTERNAL_DIR}"
++        BUILD_DIR "${HAILO_PRE_BUILD_EXTERNAL_DIR}/build"
++        CONFIGURE_ARGS "-DHAILO_EXTERNAL_DIR=${HAILO_EXTERNAL_DIR}"
++    )
++    message("Finished downloading dependencies")
++else()
++    message("Offline compilation, skipped dependencies download")
++endif()
+ 
+ add_subdirectory(tools)
+\ No newline at end of file
